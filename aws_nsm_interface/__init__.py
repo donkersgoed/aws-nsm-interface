@@ -3,6 +3,7 @@
 # Standard library imports
 import ctypes
 import fcntl
+import typing
 
 # Related third party imports
 import cbor2
@@ -18,15 +19,15 @@ NSM_IOCTL_NUMBER = 0x00
 NSM_REQUEST_MAX_SIZE = 0x1000
 NSM_RESPONSE_MAX_SIZE = 0x3000
 
-def open_nsm_device() -> int:
+def open_nsm_device() -> typing.TextIO:
     """Open the /dev/nsm file and return the file handle."""
-    return open(NSM_DEV_FILE, 'w')
+    return open(NSM_DEV_FILE, 'r+')
 
-def close_nsm_device(file_handle: int) -> None:
+def close_nsm_device(file_handle: typing.TextIO) -> None:
     """Close the /dev/nsm file."""
     file_handle.close()
 
-def lock_pcr(file_handle: int, index: int) -> bool:
+def lock_pcr(file_handle: typing.TextIO, index: int) -> bool:
     """Lock PCR at index."""
     nsm_key = 'LockPCR'
     request_data = cbor2.dumps({nsm_key: {'index': index}})
@@ -55,7 +56,7 @@ def lock_pcr(file_handle: int, index: int) -> bool:
         raise IoctlError(decoded_response.get('Error'))
     return True
 
-def lock_pcrs(file_handle: int, lock_range: int) -> bool:
+def lock_pcrs(file_handle: typing.TextIO, lock_range: int) -> bool:
     """Lock PCRs in range(0, lock_range)."""
     nsm_key = 'LockPCRs'
     request_data = cbor2.dumps({nsm_key: {'range': lock_range}})
@@ -84,7 +85,7 @@ def lock_pcrs(file_handle: int, lock_range: int) -> bool:
         raise IoctlError(decoded_response.get('Error'))
     return True
 
-def describe_pcr(file_handle: int, index: int) -> dict:
+def describe_pcr(file_handle: typing.TextIO, index: int) -> dict:
     """Request PCR description from /dev/nsm."""
     nsm_key = 'DescribePCR'
     request_data = cbor2.dumps({nsm_key: {'index': index}})
@@ -114,7 +115,7 @@ def describe_pcr(file_handle: int, index: int) -> dict:
     return decoded_response.get(nsm_key)
 
 def get_attestation_doc(
-    file_handle: int,
+    file_handle: typing.TextIO,
     user_data: bytes = None,
     nonce: bytes = None,
     public_key: bytes = None
@@ -151,7 +152,7 @@ def get_attestation_doc(
         raise IoctlError(decoded_response.get('Error'))
     return decoded_response.get(nsm_key)
 
-def extend_pcr(file_handle: int, index: int, data: bytes) -> dict:
+def extend_pcr(file_handle: typing.TextIO, index: int, data: bytes) -> dict:
     """Extend the PCR at the given index."""
     nsm_key = 'ExtendPCR'
     request_data = cbor2.dumps({nsm_key: {'index': index, 'data': data}})
@@ -180,7 +181,7 @@ def extend_pcr(file_handle: int, index: int, data: bytes) -> dict:
         raise IoctlError(decoded_response.get('Error'))
     return decoded_response.get(nsm_key)
 
-def describe_nsm(file_handle: int) -> dict:
+def describe_nsm(file_handle: typing.TextIO) -> dict:
     """Request NSM description from /dev/nsm."""
     nsm_key = 'DescribeNSM'
     request_data = cbor2.dumps(nsm_key)
@@ -209,7 +210,7 @@ def describe_nsm(file_handle: int) -> dict:
         raise IoctlError(decoded_response.get('Error'))
     return decoded_response.get(nsm_key)
 
-def get_random(file_handle: int, length: int = 32) -> bytes:
+def get_random(file_handle: typing.TextIO, length: int = 32) -> bytes:
     """Request random bytes from /dev/nsm."""
     if length < 1 or length > 256:
         raise ValueError('GetRandom supports length between 1 and 256 inclusive.')
@@ -260,7 +261,7 @@ def _decode_response(nsm_message: NsmMessage) -> dict:
     # Decode the CBOR and return it.
     return cbor2.loads(cbor_data)
 
-def _execute_ioctl(file_handle: int, nsm_message: NsmMessage) -> None:
+def _execute_ioctl(file_handle: typing.TextIO, nsm_message: NsmMessage) -> None:
     """Send an NsmMessage to /dev/nsm trough ioctl."""
     # Calculate the IOWR operation. Should always result in 3223325184.
     operation = IOC(
