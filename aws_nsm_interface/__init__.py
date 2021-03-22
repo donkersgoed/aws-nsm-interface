@@ -21,7 +21,7 @@ NSM_RESPONSE_MAX_SIZE = 0x3000
 
 def open_nsm_device() -> typing.TextIO:
     """Open the /dev/nsm file and return the file handle."""
-    return open(NSM_DEV_FILE, 'r+')
+    return open(NSM_DEV_FILE, 'r')
 
 def close_nsm_device(file_handle: typing.TextIO) -> None:
     """Close the /dev/nsm file."""
